@@ -1,249 +1,29 @@
-from scapy.all import *
-import time
-from os import system
+WIRESHARK IMPLEMENTATION USING PYTHON.
+MODULES USED- SCAPY
 
-def display_title():
-    system("cls")
-    print("\t\t-----------------------------------")
-    print("\t\t\t  MINI WIRESHARK")
-    print("\t\t-----------------------------------")
+This is a Python script that simulates a simple version of Wireshark. It uses the Scapy library to sniff packets on a network interface, apply a filter to the packets, and display the captured packets' details. Here is the overview of the script:
 
-def welcome_screen():
-    display_title()
-    print("\n\n\n\t\t\tWelcome to Wireshark\n")
-    print("\n\t\t\t   1 - Start new\n\t\t\t   2 - Load\n\t\t\t   3 - Exit")
-    choice=int(input("\n\n\t\t\tEnter your choice? "))
-    if choice==1:
-        interface()
-    elif choice==2:
-        load()
-    else:
-        exit()
+It imports the necessary libraries, including Scapy and OS, for capturing packets and performing system-related tasks.
 
-def interface():
-    display_title()
-    print("\n\nSelect the newtork inteface to be used to sniff packets:\n")
-    show_interfaces()
-    netindex=input("\n\nEnter the index of the newtork interface to snip packets:  ")
-    iface=chosen_interface(netindex)
-    if iface==-1:
-        system("cls")
-        print("\n\n\n\t\t\t*Enter a valid IFACE index from the list shown*\t")
-        time.sleep(2)
-        welcome_screen()
-    else:
-        snip_page(None,iface)
 
-def options(pkts=None,iface=None):
-    print("\n\n\t\t\t\t\tOptions:\n\n 1 -> Capture packets again\t2 -> Examine a captured packet\t   3 -> Save session\t  4 -> Exit session\n\n")
-    choice=int(input("Enter your choice? "))
-    if choice==1:
-        snip_page(None,iface)
-    elif choice==2:
-        examine(pkts)
-    elif choice==3:
-        save(pkts)
-    else:
-        welcome_screen()
+FUNCTION WELCOME SCREEN():
 
-def valid_filter(filter):
-    flag=True
-    filter_list=['tcp','ip','arp','icmp','udp']
-    f=filter.split(" ")
-    if len(f)>1 and len(f)%2==0:
-        flag=False
-        return flag 
-    for i in range(len(f)):
-        if i%2 != 0:
-            if f[i] == 'or' or f[i] == 'and':
-                flag=True
-            else:
-                flag=False
-        elif f[i] not in filter_list:
-            flag=False
-    return flag
+ It defines several functions, including the main function, which is called welcome_screen(). This function displays the welcome screen with three options: to start a new capture, to load a saved session, or to exit.
 
-def snip_page(current_filter=None,iface=None):
-    system("cls")
-    display_title()
-    if current_filter==None:
-        print("\n\t\t** Enter \'none\' to capture all packets **")
-        current_filter=str(input("\nEnter the filter name:  "))
-        current_filter=current_filter.lower()
-        if valid_filter(current_filter) or current_filter=="none":
-            snip_page(current_filter,iface)
-        else:
-            system("cls")
-            display_title()
-            print("\n\n\t\t*Enter a proper filter option*\t")
-            time.sleep(2)
-            snip_page(None,iface)
-    else:
-        print("\t\t\nCurrent Filter   :   ",current_filter,"\n")
-        pkts=sniff_packets(iface,current_filter)
-        print_packets(pkts)
-        options(pkts,iface)
+FUNCTION INTERFACE():
 
-def print_packets(pkts):
-    print("\t\t\tPACKETS\n")
-    print("S.No\t   Source\t\t  Destination\t\t Type\t Length\t      Info\n")
-    s=20
-    for i in range(len(pkts)):
-        tl=top_layer(pkts[i]).upper()
-        if pkts[i].haslayer(ARP)==False:
-            if tl=="TCP":
-                print(i+1,"\t",pkts[i][IP].src," "(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\t",pkts[i][TCP].sport,"->",pkts[i][TCP].dport," [FIN,ACK] Seq=",pkts[i][TCP].seq)
-            elif tl=="UDP":
-                print(i+1,"\t",pkts[i][IP].src," "(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\t",pkts[i][UDP].sport,"->",pkts[i][UDP].dport)
-            elif tl=="ICMP":
-                op=pkts[i][ICMP].type
-                if op==8:
-                    opcode="request"
-                else:
-                    opcode="response"
-                print(i+1,"\t",pkts[i][IP].src," "(s-len(pkts[i][IP].src)),"\t",pkts[i][IP].dst," "(s-len(pkts[i][IP].dst)),"\t",tl,"\t",len(pkts[i]),"\tEcho ",opcode," id=",pkts[i][ICMP].id)
-        else:
-            op=pkts[i][ARP].op
-            tl="ARP"
-            if op==1:
-                print(i+1,"\t",pkts[i].src," "(s-len(pkts[i].src)),"\t",pkts[i].dst," "(s-len(pkts[i].dst)),"\t",tl," "*(8-len(tl)),"  ",len(pkts[i]),"\tWho has ",pkts[i][ARP].pdst,"? Tell ",pkts[i][ARP].psrc)
+Depending on the user's input, it calls the interface() or load() function, which asks the user to select a network interface for capturing packets or to load a saved session, respectively.
+The interface() function displays a list of network interfaces and asks the user to select one. After selecting the interface, the function calls the snip_page() function, which starts capturing packets using Scapy and displays them on the screen.
 
-            else:
-                print(i+1,"\t",pkts[i].src," "(s-len(pkts[i].src)),"\t",pkts[i].dst," "(s-len(pkts[i].dst)),"\t",tl," "*(8-len(tl)),"  ",len(pkts[i]),"\t",pkts[i][ARP].pdst," is at ",pkts[i][ARP].psrc)
-            
-def sniff_packets(iface,filter):
-    if filter=="none":
-        filter=None
-    pkts=sniff(iface=iface,count=20,filter=filter,timeout=8)
-    if(len(pkts)==0):
-        print("\n\n\tNo packets captured !!")
-        time.sleep(3)
-        snip_page(None,iface)
-    return pkts
+FUNCTION SNIP PAGE():
 
-def top_layer(packet):
-    while packet.payload and packet.payload.name!='Raw':
-        packet=packet.payload
-        layer=packet.name
-    return layer
-    
-def examine(pkts):
-    system("cls")
-    display_title()
-    print("\n\n")
-    print_packets(pkts)
-    n=int(input("\n\nEnter the packet number to examine: "))
-    if n>len(pkts):
-        print("\n\n\t** Enter a valid packet number !! **\n\n")
-        time.sleep(3)
-        examine(pkts)
-    system("cls")
-    display_title()
-    print("\n\n")
-    for i in range(0,4):
-        if i==0:
-            print("Frame :",len(pkts[n-1])," bytes on wire (",len(pkts[n-1])*8," bits), ",len(pkts[n-1])," bytes captured (",len(pkts[n-1])*8,"bits)\n")
-        if i==1:
-            print("Ethernet Layer 2, Src:",pkts[n-1].src," Dst:",pkts[n-1].dst)
-            print("  >Destination:       ",pkts[n-1].dst)
-            print("  >Source:            ",pkts[n-1].src)
-            print("  >Type:              ",pkts[n-1].type,"\n")
-        if i==2:
-            if pkts[n-1].haslayer(IP):
-                print("Internet Protocol Version 4, Src:",pkts[n-1][IP].src,", Dst:",pkts[n-1][IP].dst)
-                print("  >Version:       ",pkts[n-1][IP].version)
-                print("  >IHL:           ",pkts[n-1][IP].ihl)
-                print("  >Total Length:  ",pkts[n-1][IP].len)
-                print("  >Identification:",pkts[n-1][IP].id)
-                print("  >TTL:           ",pkts[n-1][IP].ttl)
-                print("  >Protocol:      ",pkts[n-1][IP].proto,"\n")
-            if pkts[n-1].haslayer(ARP):
-                op=pkts[n-1][ARP].op
-                if op==1:
-                    opcode="request"
-                else:
-                    opcode="response"
-                print("Address Resolution Protocol (",opcode,")")
-                print("  >Hardware Type:     ",pkts[n-1][ARP].hwtype)
-                print("  >Hardware Size:     ",pkts[n-1][ARP].hwlen)
-                print("  >Protocol Size:     ",pkts[n-1][ARP].plen)
-                print("  >Opcode:            ",opcode," (",pkts[n-1][ARP].op,")")
-                print("  >Sender MAC Address:",pkts[n-1][ARP].hwsrc)
-                print("  >Sender IP Address: ",pkts[n-1][ARP].psrc)
-                print("  >Target MAC Address:",pkts[n-1][ARP].hwdst)
-                print("  >Target IP Address: ",pkts[n-1][ARP].pdst)
-                break
-        if i==3:
-            if pkts[n-1].haslayer(TCP):
-                print("Transmission Control Protocol, Src Port:",pkts[n-1][TCP].sport," Dst Port:",pkts[n-1][TCP].dport)
-                print("  >Source Port:      ",pkts[n-1][TCP].sport)
-                print("  >Destination Port: ",pkts[n-1][TCP].dport)
-                print("  >Sequence Number:  ",pkts[n-1][TCP].seq)
-                print("  >Window:           ",pkts[n-1][TCP].window,"\n")
-            elif pkts[n-1].haslayer(UDP):
-                print("User Datagram Protocol, Src Port:",pkts[n-1][UDP].sport," Dst Port:",pkts[n-1][UDP].dport)
-                print("  >Source Port:      ",pkts[n-1][UDP].sport)
-                print("  >Destination Port: ",pkts[n-1][UDP].dport)
-                print("  >Length:           ",pkts[n-1][UDP].len)
-                print("  >Checksum:         ",pkts[n-1][UDP].chksum,"\n")
-            elif pkts[n-1].haslayer(ICMP):
-                print("Internet Control Message Protocol")
-                print("  >Type:     ",pkts[n-1][ICMP].type)
-                print("  >Code:     ",pkts[n-1][ICMP].code)
-                print("  >Checksum: ",pkts[n-1][ICMP].seq,"\n")
-    print("\n\n")
-    print(hexdump(pkts[n-1]))
-    print("\n\n")
-    options(pkts)
+The snip_page() function captures packets on the selected interface and applies a filter to the packets based on the user's input. It then displays the packet details on the screen and offers four options: to capture packets again, to examine a captured packet, to save the captured packets, or to exit the session.
 
-def save(pkts):
-    display_title()
-    name=str(input("\n\nEnter the file to be save: "))
-    path="Saved files/"+name+".pcap"
-    wrpcap(path,pkts)
-    print("\nFile saved under : "+path)
-    time.sleep(3)
-    examine(pkts)
+FUNCTION EXAMINE():
 
-def load():
-    display_title()
-    name=str(input("\n\nEnter file name to load: "))
-    path="Saved files/"+name+".pcap"
-    try:
-        pkts=rdpcap(path)
-        print("\nFile : "+path+"  loaded")
-    except:
-        system("cls")
-        print("\n\n\t***File does not exist!! Enter a proper file name**")
-        time.sleep(3)
-        welcome_screen()
-    time.sleep(3)
-    examine(pkts)
+The examine() function examines a captured packet and displays its details on the screen.
 
-def exit():
-    display_title()
-    print("\n\t\t\t\t\t\tBy: Ashish & Hafiz")
-    msg="GOODBYE..."
-    print("\n\n\t\t\t",end='')
-    for x in msg:
-        print(x+" ",end='')
-        time.sleep(0.3)
-    print("\n\n\n")
-    system("cls")
+FUNCTION SAVE():
 
-def show_interfaces():
-    print(conf.ifaces)
+The save() function saves the captured packets to a file.
 
-def chosen_interface(netindex):
-    try:
-        iface=dev_from_index(netindex)
-    except:
-        iface=-1
-    return iface
-
-def main():
-    system("cls")
-    welcome_screen()
-    system("cls")
-
-main()
